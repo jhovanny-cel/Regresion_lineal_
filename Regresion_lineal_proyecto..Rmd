@@ -1,0 +1,370 @@
+---
+title: "Regresion_lineal"
+author: "Jhovanny Alexander Gutierrez C"
+date : "8/05/2024"
+output: html_notebook
+---
+
+Usando la base de datos **DataSetByGender_Aggregates_Excel_AggregateDS** tomada de la página *The World Bank*, relacionada con el estudio *"Measuring Brain Drain by Gender 1990-2000"*, se procederá a identificar las variables que tienen una correlación significativa con el objetivo de determinar la variable de estudio. Esto permitirá predecir el comportamiento de los datos a partir de mi variable de estudio seleccionada.
+
+```{r}
+library(readr)
+library(ggplot2)
+library(corrplot)
+library(readr)
+
+ruta <- "C:/Users/jhova/OneDrive/Documentos/DataSetByGender_Aggregates_Excel_AggregateDS.csv"
+
+datos <- read_delim(ruta, delim = ",", escape_double = FALSE, trim_ws = TRUE)
+datos <-data.frame(datos)
+head(datos,100)
+```
+
+```{r}
+dim(datos)
+```
+
+Se tienen 39 variables en total, de las cuales se van a utilizar 8 variables cuantitativas y 1 variable categórica para hacer su respectiva correlación
+
+```{r}
+tail(datos,5)
+```
+
+```{r}
+summary(datos)
+```
+
+```{r}
+print(names(datos))
+```
+
+Se va hacer la exploración gráfica de los datos ya analizados.
+
+Usando la matriz de correlación vamos a medir el grado de correlación lineal (la fuerza y dirección de la relación) entre cada par de variables de estudio (8 variables cuantitativas), se usará la prueba de correlación paramétrica de Pearson, en donde los valores de correlación se encuentran entre -1 y 1.
+
+**observación:** La matriz de correlación, se utiliza para investigar la dependencia entre múltiples variables al mismo tiempo, el resultado es una tabla que contiene la correlación entre cada variable y las demás.
+
+Matriz de correlación usando la prueba de pearson
+
+```{r}
+df <- data.frame(datos$MS_ALL_TOT,datos$MS_MAL_TOT,datos$MS_MAL_LOW,datos$MS_MAL_MED,datos$MS_MAL_HIG,datos$MS_FEM_TOT,datos$MS_FEM_LOW,datos$MS_FEM_MED,datos$MS_FEM_HIG)
+
+res=cor(df)
+```
+
+En la tabla anterior muestra la correlación entre los posibles pares de variables **MS_ALL_TOT, MS_MAL_LOW,MS_MAL_MED, MS_MAL_HIG, MS_FEM_TOT, MS_FEM_LOW, MS_FEM_MED, MS_FEM_HIG, MS_MAL_TOT** que se escogieron para hacer el estudio.
+
+```{r}
+corrplot(res, method = "circle", tl.cex = 0.8)
+
+```
+
+Note que la intensidad y el tamaño del circulo es proporcional al factor de correlación y además la matriz es simétrica
+
+Ahora se usa el **Test de correlación de Pearson** para usar la prueba de hipótesis. Usando el valor *p* se rechaza o no se rechaza la hipótesis nula.
+
+## $H_{0}$: El coeficiente de correlación de la población es cero
+
+## $H_{1}$: El coeficiente de correlación de la población es diferente de cero"
+
+cor.test(datos\$MS_MAL_TOT,datos\$MS_ALL_TOT,method="pearson")
+
+```{r}
+cor.test(datos$MS_MAL_LOW,datos$MS_ALL_TOT,method="pearson")
+```
+
+Como el valor *p* es menor al 5% entre las variables ***MS_MAL_TOT*****, *MS_ALL_LOW***. No se rechaza la hipótesis nula, es decir que existe correlación entre dichas variables.
+
+```{r}
+cor.test(datos$MS_MAL_MED,datos$MS_ALL_TOT,method="pearson")
+
+```
+
+Como el valor *p* es menor al 5% entre las variables ***MS_ALL_TOT*****, *MS_MAL_MED***. No se rechaza la hipótesis nula, es decir que existe correlación entre dichas variables.
+
+```{r}
+cor.test(datos$MS_MAL_HIG,datos$MS_ALL_TOT,method="pearson")
+```
+
+Como el valor *p* es menor al 5% entre las variables ***MS_ALL_TOT*****, *MS_MAL_HIG***. No se rechaza la hipótesis nula, es decir que existe correlación entre dichas variables.
+
+```{r}
+cor.test(datos$MS_FEM_TOT,datos$MS_ALL_TOT,method="pearson")
+```
+
+Como el valor *p* es menor al 5% entre las variables ***MS_ALL_TOT*****, *MS_FEM_TOT***. No se rechaza la hipótesis nula, es decir que existe correlación entre dichas variables.
+
+```{r}
+cor.test(datos$MS_FEM_LOW,datos$MS_ALL_TOT,method="pearson")
+```
+
+Como el valor *p* es menor al 5% entre las variables ***MS_ALL_TOT*****, *MS_FEM_LOW***. No se rechaza la hipótesis nula, es decir que existe correlación entre dichas variables.
+
+```{r}
+cor.test(datos$MS_FEM_MED,datos$MS_ALL_TOT,method="pearson")
+```
+
+Como el valor *p* es menor al 5% entre las variables ***MS_ALL_TOT*****, *MS_FEM_MED***. No se rechaza la hipótesis nula, es decir que existe correlación entre dichas variables.
+
+```{r}
+cor.test(datos$MS_FEM_HIG,datos$MS_ALL_TOT,method="pearson")
+```
+
+Como el valor *p* es menor al 5% entre las variables ***MS_ALL_TOT*****, *MS_FEM_HIG***. No se rechaza la hipótesis nula, es decir que existe correlación entre dichas variables.
+
+**Observacion:** como todos los tests de correlación de Pearson el valor *p* fue menor que el 5%, entonces No rechazo la hipótesis en ninguno
+
+2)  Ahora se va realizar el análisis de regresión
+
+Para esto vamos hacer un análisis gráfico de las variables de estudio con el objetivo de interpretar los datos y ademas se va a ajustar los parámetros en la regresión lineal con el objetivo de obtener el mejor comportamiento de las variables predictoras (8 cuantitativas y 1 cualitativa "**YEAR**") y la variable de estudio "**MS_ALL_TOT**".
+
+```{r}
+hist(datos$MS_ALL_TOT, xlab = "MS_ALL_TOT", main = "Histograma con Curva de Densidad", freq = FALSE)
+
+lines(density(datos$MS_ALL_TOT), col = "red")
+```
+
+*Veamos que la mayoría de los países la variable Total Migration Stock 25+(**MS_ALL_TOT**) representa la cantidad de personas que migran de su país de origen, el cual se encuentra entre el intervalo de 0 a* 500000.
+
+```{r}
+hist(datos$MS_MAL_TOT, xlab = "MS_MAL_TOT", main = "Histograma con Curva de Densidad", freq = FALSE)
+
+lines(density(datos$MS_MAL_TOT), col = "red")
+```
+
+*Veamos que la mayoría delos paises la variable Males' migration stock - All education groups (**MS_MAL_TOT**) representa la cantidad de personas que migran de su pais de origen, el cual se encuentra entre el intervalo de 0 a* 500000.
+
+```{r}
+hist(datos$MS_MAL_LOW, xlab = "MS_MAL_LOW", main = "Histograma con Curva de Densidad ", freq = FALSE)
+
+lines(density(datos$MS_MAL_LOW), col = "red")
+```
+
+*Veamos que la mayoría de los países la variable Males' migration stock - Low skilled (**MS_MAL_LOW**) representa la cantidad de personas que migran de su país de origen, el cual se encuentra entre el intervalo de 0 a* 250000.
+
+```{r}
+hist(datos$MS_MAL_MED, xlab = "MS_MAL_MED", main = "Histograma con Curva de Densidad", freq = FALSE)
+
+lines(density(datos$MS_MAL_MED), col = "red")
+```
+
+*Veamos que la mayoría de los países la variable Males' migration stock - Medium skilled - All education groups (**MS_MAL_MED**) representa la cantidad de personas que migran de su país de origen, el cual se encuentra entre el intervalo de 0 a* 50000.
+
+```{r}
+hist(datos$MS_MAL_HIG, xlab = "MS_MAL_HIG", main = "Histograma con Curva de Densidad", freq = FALSE)
+
+lines(density(datos$MS_MAL_HIG), col = "red")
+
+```
+
+*Veamos que la mayoría de los países la variable Males' migration stock - High skilled (**MS_MAL_HIG**) representa la cantidad de personas que migran de su país de origen, el cual se encuentra entre el intervalo de 0 a* 100000.
+
+```{r}
+hist(datos$MS_FEM_TOT, xlab = "MS_FEM_TOT", main = "Histograma con Curva de Densidad", freq = FALSE)
+
+lines(density(datos$MS_FEM_TOT), col = "red")
+```
+
+*Veamos que la mayoría de los países la variable Females' migration stock - All education groups (**MS_FEM_TOT**) representa la cantidad de personas que migran de su país de origen, el cual se encuentra entre el intervalo de 0 a* 500000.
+
+```{r}
+hist(datos$MS_FEM_LOW, xlab = "MS_FEM_LOW", main = "Histograma con Curva de Densidad", freq = FALSE)
+
+lines(density(datos$MS_FEM_LOW), col = "red")
+```
+
+*Veamos que la mayoría de los países la variable Females' migration stock - Low skilled (**MS_FEM_LOW**) representa la cantidad de personas que migran de su país de origen, el cual se encuentra entre el intervalo de 0 a* 250000.
+
+```{r}
+hist(datos$MS_FEM_MED, xlab = "MS_FEM_MED", main = "Histograma con Curva de Densidad", freq = FALSE)
+
+lines(density(datos$MS_FEM_MED), col = "red")
+```
+
+*Veamos que la mayoría de los países la variable Females' migration stock - Medium skilled (**MS_FEM_MED**) representa la cantidad de personas que migran de su país de origen, el cual se encuentra entre el intervalo de 0 a* 50000.
+
+```{r}
+hist(datos$MS_FEM_HIG, xlab = "MS_FEM_HIG", main = "Histograma con Curva de Densidad", freq = FALSE)
+
+lines(density(datos$MS_FEM_HIG), col = "red")
+```
+
+*Veamos que la mayoría de los países la variable Females' migration stock - High skilled (**MS_FEM_HIG**) representa la cantidad de personas que migran de su país de origen, el cual se encuentra entre el intervalo de 0 a* 100000.
+
+```{r}
+boxplot(datos$MS_ALL_TOT, xlab = "MS_ALL_TOT", main = "Diagrama de Caja y Bigotes")
+
+```
+
+Se observa que con respecto de la línea hacia arriba hay datos atípicos, dicha linea me representa el percentil 95, es decir que de la línea hacia abajo se encuentra el 95% de los datos, y con respecto a la caja es propocional la variabilidad de los datos con respecto al ancho de la caja.
+
+```{r}
+boxplot(datos$MS_MAL_TOT, xlab = "MS_MAL_TOT", main = "Diagrama de Caja y Bigotes")
+
+```
+
+Se observa que con respecto de la línea hacia arriba hay datos atípicos, dicha linea me representa el percentil 95, es decir que de la línea hacia abajo se encuentra el 95% de los datos, y con respecto a la caja es propocional la variabilidad de los datos con respecto al ancho de la caja.
+
+```{r}
+boxplot(datos$MS_MAL_LOW, xlab = "MS_MAL_LOW", main = "Diagrama de Caja y Bigotes")
+
+```
+
+Se observa que con respecto de la línea hacia arriba hay datos atípicos, dicha linea me representa el percentil 95, es decir que de la línea hacia abajo se encuentra el 95% de los datos, y con respecto a la caja es propocional la variabilidad de los datos con respecto al ancho de la caja.
+
+```{r}
+boxplot(datos$MS_MAL_MED, xlab = "MS_MAL_MED", main = "Diagrama de Caja y Bigotes")
+
+```
+
+Se observa que con respecto de la línea hacia arriba hay datos atípicos, dicha linea me representa el percentil 95, es decir que de la línea hacia abajo se encuentra el 95% de los datos, y con respecto a la caja es propocional la variabilidad de los datos con respecto al ancho de la caja.
+
+```{r}
+boxplot(datos$MS_MAL_HIG, xlab = "MS_MAL_HIG", main = "Diagrama de Caja y Bigotes")
+
+```
+
+Se observa que con respecto de la línea hacia arriba hay datos atípicos, dicha linea me representa el percentil 95, es decir que de la línea hacia abajo se encuentra el 95% de los datos, y con respecto a la caja es propocional la variabilidad de los datos con respecto al ancho de la caja.
+
+```{r}
+boxplot(datos$MS_FEM_TOT, xlab = "MS_FEM_TOT", main = "Diagrama de Caja y Bigotes")
+
+```
+
+Se observa que con respecto de la línea hacia arriba hay datos atípicos, dicha linea me representa el percentil 95, es decir que de la línea hacia abajo se encuentra el 95% de los datos, y con respecto a la caja es propocional la variabilidad de los datos con respecto al ancho de la caja.
+
+```{r}
+boxplot(datos$MS_FEM_LOW, xlab = "MS_FEM_LOW", main = "Diagrama de Caja y Bigotes")
+
+```
+
+Se observa que con respecto de la línea hacia arriba hay datos atípicos, dicha linea me representa el percentil 95, es decir que de la línea hacia abajo se encuentra el 95% de los datos, y con respecto a la caja es propocional la variabilidad de los datos con respecto al ancho de la caja.
+
+```{r}
+boxplot(datos$MS_FEM_MED, xlab = "MS_FEM_MED", main = "Diagrama de Caja y Bigotes")
+
+```
+
+Se observa que con respecto de la línea hacia arriba hay datos atípicos, dicha linea me representa el percentil 95, es decir que de la línea hacia abajo se encuentra el 95% de los datos, y con respecto a la caja es propocional la variabilidad de los datos con respecto al ancho de la caja.
+
+```{r}
+boxplot(datos$MS_FEM_HIG, xlab = "MS_FEM_MED", main = "Diagrama de Caja y Bigotes")
+
+```
+
+Se observa que con respecto de la línea hacia arriba hay datos atípicos, dicha linea me representa el percentil 95, es decir que de la línea hacia abajo se encuentra el 95% de los datos, y con respecto a la caja es proporcional la variabilidad de los datos con respecto al ancho de la caja.
+
+Ahora se va a implementar el modelo de regresión lineal, para esto se va a usar la variable cualitativa ***YEAR*** para usarla como variable dummy
+
+```{r}
+datos$YEAR <- factor(datos$YEAR)
+levels(datos$YEAR) <- c("0","1")
+datos
+```
+
+Ahora se va a ajustar el modelo lineal con respecto a las variables explicativas, vamos a medir el valor *p* de los resultados con respecto a mi variable de estudio en la regresión lineal y solo vamos a tomar 3 variables cuantitativas ya estudiadas en este documento. En particular vamos a usar solo las variables que trata de los hombres.
+
+```{r}
+regresion=lm(datos$MS_ALL_TOT ~  datos$YEAR + datos$MS_MAL_LOW + datos$MS_MAL_MED +  datos$MS_MAL_HIG)
+summary(regresion)
+```
+
+El modelo para la regresión lineal que se ajusta a las variables predictoras con sus respectivos coeficientes es $Y=2.206\cdot 10^{3}-2.831\cdot10^{3} X_1 +1.615 X_2 + 2.619 X_3 + 2.196 X_4$ donde el *R-squared = 0.99 y con respecto a las variables de estudio.*
+
+*Ahora se va a estudiar los **supuestos** con respecto a los residuos del modelo de regresión lineal ya entrenado, los cuales son:*
+
+-   **Independencia**
+
+-   **Homocesdasticidad**
+
+-   **Normalidad**
+
+## Independencia
+
+Vamos a graficas los errores y seguidamente se hace la prueba de **Dubin-Watson para garantizar** la independencia de los errores.
+
+```{r}
+plot(regresion, 1, col = "cyan", pch = 20)
+```
+
+Ahora se hace la inferencia con la prueba **Dubin-Watson**
+
+## $H_{0}$: Todo los errores son independientes.
+
+## $H_{1}$: Todos los errores No son independientes.
+
+veamos la inferencia de la prueba **Dubin-Watson**
+
+```{r}
+library(lmtest)
+dwtest(regresion, alternative ="two.sided")
+```
+
+**Observación:** Se concluye que con una confianza del 95% se rechaza la independencia de los residuos, ya que en la prueba **Dubin-Watson** garantiza que la autocorrelación no es cero. Esto puede deberse a la variable cualitativa que introdujimos de manera obligatoria.
+
+## Homocedasticidad
+
+Veamos que la varianza de los errores sean los mismos usando la prueba de **studentized Breusch-Pagan test**
+
+## $H_{0}$ : Todos los errores tienen la misma varianza.
+
+## $H_{1}$ : Todos los errores No tienen la misma varianza.
+
+```{r}
+bptest(regresion)
+```
+
+**Observación:** Por la prueba **studentized Breusch-Pagan test** se tiene que el valor p es menor al 0.05, entonces no rechazamos la hipotesis nula, que supone el supuesto de homoestadistidad.
+
+## Normalidad
+
+Veamos que el error tenga una distribución normal ($N ~ (0,\sigma^2)$) usando la prueba de ***Shapiro-Wilk***.
+
+```{r}
+plot(regresion, 2, col = "cyan", pch=20 )
+```
+
+## $H_{0}$: Los errores tienen distribución normal.
+
+## $H_{1}$ : Los errores No tienen distribución normal.
+
+```{r}
+shapiro.test(residuals(regresion))
+```
+
+**Observación**: Note que el valor *p* es menor al 5% lo que se concluye con respecto a la prueba ***Shapiro-Wilk** por lo tanto No se rechaza la hipótesis nula, la cual es que los errores tienen normalidad.*
+
+## *¿Es necesario hacer algun tipo de transformación de variable?*
+
+```{r}
+res = lm(scale(datos$MS_ALL_TOT) ~ datos$YEAR +  scale(datos$MS_MAL_LOW) + scale( datos$MS_MAL_MED) + scale(datos$MS_MAL_HIG))
+summary(res)
+
+
+```
+
+**Observación:** Note que $R^{2}$ normalizado es igual que el modelo de regresión lineal sin normalizar, por lo tanto se concluye que **no es necesario** normalizar los datos.
+
+# Análisis de los resultados del modelo
+
+Como el modelo fue:
+
+$Y=2.206\cdot 10^{3}-2.831\cdot10^{3} X_1 +1.615 X_2 + 2.619 X_3 + 2.196 X_4$
+
+Donde:
+
+-   $X_1$= Categoría de año, 0 es 1990 y 1 es 2000.
+
+-   $X_2$= cantidad de migración de hombres con estudios pocos calificados
+
+-   $X_3$= cantidad de migración de hombres con estudios medianamente calificados
+
+-   $X_4$= Cantidad de migración de hombres con estudios altamente calificados
+
+Por el modelo podemos decir que las variables $X_2$, $X_3$ y $X_4$ aportan positivamente a la población total que migra, es decir, que si vemos que la cantidad de hombres cual sea sus estudios aumente, entonces podemos decir que el numero de personas mayores de 25 años que migran aumentará. Por otro lado el signo negativo que acompaña a la variable categórica $X_1$ significa que en el año 2000 la cantidad de personas que migraron fue menor con respecto a la del año 1990.
+
+
+
+
+
+
